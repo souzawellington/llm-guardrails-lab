@@ -1,4 +1,4 @@
-"""Compare the newest Garak reports in results/before and results/after."""
+"""Compare every Garak report in results/before with every report in results/after."""
 
 from __future__ import annotations
 
@@ -11,22 +11,22 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.paths import project_root
-from app.reporting import comparison_markdown, comparison_payload, find_latest_report, load_report
+from app.reporting import comparison_markdown, comparison_payload, find_reports, load_reports
 
 
 def main(argv: list[str] | None = None) -> int:
     del argv
     root = project_root()
-    before_path = find_latest_report(root / "results" / "before")
-    after_path = find_latest_report(root / "results" / "after")
-    if before_path is None or after_path is None:
+    before_paths = find_reports(root / "results" / "before")
+    after_paths = find_reports(root / "results" / "after")
+    if not before_paths or not after_paths:
         print("No Garak report found in results/before and results/after.")
         print("Run scripts/run_garak.py --mode before, then --mode after.")
         print("Files in results/sample are illustrations, not scans. They are ignored here.")
         return 2
 
-    before = load_report(before_path)
-    after = load_report(after_path)
+    before = load_reports(before_paths)
+    after = load_reports(after_paths)
     payload = comparison_payload(before, after)
     markdown = comparison_markdown(before, after)
     out_dir = root / "results"

@@ -103,11 +103,37 @@ make compare
 
 `scan-before` calls `/v1/chat/raw`. `scan-after` calls `/v1/chat/guarded`. Reports land in `results/before/` and `results/after/`. The comparison is written to `results/comparison.md`.
 
-Narrow a run when you want a cheaper first pass:
+Run one probe when you want a cheaper pass, or to resume after a crash:
 
 ```bash
-GARAK_SPEC=probes.realtoxicityprompts.RTPBlank make scan-before
+make scan-before PROBES=probes.realtoxicityprompts.RTPBlank
 ```
+
+`GARAK_SPEC` is the same list if you are not using `make`. One probe is written to its own report file. `make compare` pools every `*.report.jsonl` in `results/before` and `results/after`.
+
+## Slow reasoning models
+
+A reasoning model such as Grok can take longer than two minutes for one prompt. Garak's REST client used to wait 120 seconds and then abort the whole scan on `ReadTimeout`. The lab now waits `LLM_TIMEOUT_SECONDS` (default 300). Garak waits 30 seconds longer. If the model is still going, the lab returns HTTP 504 and Garak skips that prompt instead of stopping.
+
+Put this in `.env` and restart `make serve`. The running server does not pick up a new timeout until it restarts.
+
+```bash
+LLM_TIMEOUT_SECONDS=300
+LLM_MAX_TOKENS=1024
+REASONING_EFFORT=low
+```
+
+`REASONING_EFFORT` is optional. Leave it unset for a model that rejects the field. `low` asks xAI and OpenAI reasoning models to spend less effort. `LLM_MAX_TOKENS=none` turns the cap off.
+
+Resume the probes that did not finish. Garak runs names in alphabetical order, so `probes.dan.Dan_11_0` is first. Keep any `results/before/*.report.jsonl` from the crashed run, and do not rerun a probe that file already finished:
+
+```bash
+make scan-before PROBES=probes.leakreplay.LiteratureCloze
+make scan-before PROBES=probes.promptinject.HijackLongPrompt
+make scan-before PROBES=probes.realtoxicityprompts.RTPBlank
+```
+
+A skipped timeout is a `nones` count, not a pass. Raise `LLM_TIMEOUT_SECONDS` if too many prompts are skipped. Set `GARAK_REQUEST_TIMEOUT` only when you want Garak to wait a specific number of seconds. Keep it above the model timeout.
 
 On Windows, without `make`:
 

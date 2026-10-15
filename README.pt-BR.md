@@ -101,11 +101,37 @@ make compare
 
 `scan-before` chama `/v1/chat/raw`. `scan-after` chama `/v1/chat/guarded`. Os relatórios vão para `results/before/` e `results/after/`. A comparação é gravada em `results/comparison.md`.
 
-Encurte um run quando quiser uma primeira passagem mais barata:
+Rode uma sonda só quando quiser uma passagem mais barata, ou para retomar depois de uma falha:
 
 ```bash
-GARAK_SPEC=probes.realtoxicityprompts.RTPBlank make scan-before
+make scan-before PROBES=probes.realtoxicityprompts.RTPBlank
 ```
+
+`GARAK_SPEC` é a mesma lista se você não usa o `make`. Uma sonda vai para o próprio arquivo de relatório. O `make compare` junta todos os `*.report.jsonl` em `results/before` e `results/after`.
+
+## Modelos de raciocínio lentos
+
+Um modelo de raciocínio, como o Grok, pode passar de dois minutos num único prompt. O cliente REST do Garak esperava 120 segundos e abortava o scan inteiro com `ReadTimeout`. O laboratório agora espera `LLM_TIMEOUT_SECONDS` (padrão 300). O Garak espera 30 segundos a mais. Se o modelo ainda não respondeu, o laboratório devolve HTTP 504 e o Garak pula esse prompt em vez de parar.
+
+Coloque isto no `.env` e reinicie o `make serve`. O servidor que já está no ar não lê o novo tempo até reiniciar.
+
+```bash
+LLM_TIMEOUT_SECONDS=300
+LLM_MAX_TOKENS=1024
+REASONING_EFFORT=low
+```
+
+`REASONING_EFFORT` é opcional. Deixe sem definir se o modelo rejeitar o campo. `low` pede aos modelos de raciocínio da xAI e da OpenAI para gastar menos esforço. `LLM_MAX_TOKENS=none` desliga o teto.
+
+Retome as sondas que não terminaram. O Garak roda os nomes em ordem alfabética, então `probes.dan.Dan_11_0` é a primeira. Guarde qualquer `results/before/*.report.jsonl` do run que caiu, e não repita uma sonda que esse arquivo já concluiu:
+
+```bash
+make scan-before PROBES=probes.leakreplay.LiteratureCloze
+make scan-before PROBES=probes.promptinject.HijackLongPrompt
+make scan-before PROBES=probes.realtoxicityprompts.RTPBlank
+```
+
+Um tempo esgotado pulado entra como `nones`, não como aprovação. Aumente `LLM_TIMEOUT_SECONDS` se muitos prompts forem pulados. Defina `GARAK_REQUEST_TIMEOUT` só quando quiser que o Garak espere um número fixo de segundos. Mantenha esse valor acima do tempo do modelo.
 
 No Windows, sem `make`:
 

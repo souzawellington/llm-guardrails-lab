@@ -2,7 +2,7 @@ import asyncio
 
 import httpx
 import pytest
-from app.llm_client import LLMError, complete_chat
+from app.llm_client import LLMError, LLMTimeout, complete_chat
 from app.main import app, reset_rails
 from app.rails_runtime import GuardResult
 from app.settings import Settings
@@ -74,10 +74,27 @@ def test_raw_chat_maps_model_errors(client: TestClient, monkeypatch: pytest.Monk
     assert response.status_code == 502
 
 
+def test_raw_chat_maps_a_timeout_to_504(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "present")
+
+    async def fake_complete(settings, message, client=None):
+        del settings, message, client
+        raise LLMTimeout("timed out")
+
+    monkeypatch.setattr("app.main.complete_chat", fake_complete)
+    response = client.post("/v1/chat/raw", json={"message": "hello"})
+    assert response.status_code == 504
+
+
 def test_complete_chat_reads_an_openai_reply() -> None:
+    seen: dict[str, object] = {}
+
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/v1/chat/completions"
         assert request.headers["authorization"] == "Bearer lab-key"
+        seen["body"] = request.read().decode()
         body = {"choices": [{"message": {"content": "hello back"}}]}
         return httpx.Response(200, json=body)
 
@@ -85,10 +102,14 @@ def test_complete_chat_reads_an_openai_reply() -> None:
         llm_api_key="lab-key",
         llm_base_url="https://example.test/v1",
         llm_model="demo",
+        llm_max_tokens=256,
+        reasoning_effort="low",
     )
     client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     text = asyncio.run(complete_chat(settings, "hi", client=client))
     assert text == "hello back"
+    assert '"max_tokens":256' in str(seen["body"])
+    assert '"reasoning_effort":"low"' in str(seen["body"])
 
 
 def test_blank_message_is_rejected(client: TestClient) -> None:

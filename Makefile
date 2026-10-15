@@ -23,11 +23,12 @@ smoke:
 serve:
 	$(PYTHON) -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
+# One probe: make scan-before PROBES=probes.leakreplay.LiteratureCloze
 scan-before:
-	$(PYTHON) scripts/run_garak.py --mode before
+	PROBES="$(PROBES)" $(PYTHON) scripts/run_garak.py --mode before
 
 scan-after:
-	$(PYTHON) scripts/run_garak.py --mode after
+	PROBES="$(PROBES)" $(PYTHON) scripts/run_garak.py --mode after
 
 compare:
 	$(PYTHON) scripts/compare_reports.py
