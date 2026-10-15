@@ -189,6 +189,7 @@ Se o `pip` não conseguir instalar Garak e NeMo Guardrails no mesmo ambiente, co
 - A máscara por expressão regular deixa passar muitos tipos de dado pessoal. O Presidio é mais amplo e ainda não é perfeito.
 - As heurísticas de jailbreak têm viés de inglês, são lentas em CPU e falham abertas se o detector não rodar. A NVIDIA não recomenda o modo dentro do processo para produção.
 - Esta API não tem login. Prenda-a em `127.0.0.1`. Não a exponha na rede enquanto uma chave de modelo estiver carregada.
+- Modelos de raciocínio (Grok, DeepSeek-R1, série o da OpenAI e similares) podem devolver um rastro de pensamento. O NeMo Guardrails 0.24.1 cola esse rastro na resposta protegida dentro de tags `<think>`, e o rastro pode citar o prompt interno do NeMo. O laboratório remove esses blocos nas duas rotas de chat e antes de os parsers de autoconferência e de intenção lerem o texto do modelo. Não é preciso mudar o `.env`. Os prompts de autoconferência permitem 2048 tokens de resposta para o modelo ainda terminar com sim ou não.
 
 ## Uso responsável
 

@@ -191,6 +191,7 @@ If `pip` cannot install Garak and NeMo Guardrails in the same environment, put G
 - Regex masking misses many kinds of personal data. Presidio is broader and still not perfect.
 - Jailbreak heuristics are English-biased, slow on CPU, and fail open if the detector cannot run. NVIDIA does not recommend the in-process mode for production.
 - This API has no login. Bind it to `127.0.0.1`. Do not expose it on a network while a model key is loaded.
+- Reasoning models (Grok, DeepSeek-R1, OpenAI o-series, and similar) may return a thinking trace. NeMo Guardrails 0.24.1 pastes that trace onto the guarded reply inside `<think>` tags, and the trace can quote NeMo's own prompt. The lab removes those blocks on both chat routes, and before the self-check and intent parsers read the model text. No new `.env` setting is required. The self-check prompts allow 2048 completion tokens so the model can still finish with yes or no.
 
 ## Responsible use
 

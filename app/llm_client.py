@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 
 from app.policy import SYSTEM_POLICY
+from app.reasoning import strip_reasoning
 from app.settings import Settings
 
 
@@ -72,7 +73,7 @@ async def complete_chat(
         except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise LLMError("Model endpoint returned an unexpected response.") from exc
 
-        text = _message_text(content)
+        text = strip_reasoning(_message_text(content))
         if not text:
             raise LLMError("Model endpoint returned an empty reply.")
         return text

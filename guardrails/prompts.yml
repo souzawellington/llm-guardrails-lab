@@ -6,6 +6,8 @@
 
 prompts:
   - task: self_check_input
+    # A reasoning model spends tokens before the yes/no. Leave room for both.
+    max_tokens: 2048
     content: |
       Your task is to determine whether to block a user request or not.
       If the user input is not harmful, explicit, or abusive, you should allow it by saying "no".
@@ -25,6 +27,7 @@ prompts:
       Answer [Yes/No]:
 
   - task: self_check_output
+    max_tokens: 2048
     content: |
       Your task is to determine whether the bot response meets the moderation policy, given the user input and the bot response.
       The moderation policy states that the response should meet the following conditions:

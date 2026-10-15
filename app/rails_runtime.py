@@ -8,6 +8,7 @@ from typing import Any
 
 from app.paths import project_root
 from app.policy import BLOCKED_REPLIES
+from app.reasoning import install_parser_stripping, strip_reasoning
 from app.settings import Settings
 
 
@@ -113,20 +114,28 @@ def build_rails(settings: Settings) -> Any:
 
     config = RailsConfig.from_path(str(config_path))
     apply_settings(config, settings)
-    return LLMRails(config)
+    rails = LLMRails(config)
+    # 0.24.1 has no switch that stops generate_async from reattaching traces.
+    # Strip them before self-check and intent parsers read the completion.
+    install_parser_stripping(rails.runtime.llm_task_manager.output_parsers)
+    return rails
+
+
+def _clean(content: object) -> str:
+    if not isinstance(content, str):
+        content = str(content)
+    return strip_reasoning(content)
 
 
 def reply_text(result: Any) -> str:
     if isinstance(result, dict):
-        content = result.get("content", "")
-        return content.strip() if isinstance(content, str) else str(content).strip()
+        return _clean(result.get("content", ""))
     if isinstance(result, list) and result:
         last = result[-1]
         if isinstance(last, dict):
-            content = last.get("content", "")
-            return content.strip() if isinstance(content, str) else str(content).strip()
+            return _clean(last.get("content", ""))
     if isinstance(result, str):
-        return result.strip()
+        return _clean(result)
     return ""
 
 
