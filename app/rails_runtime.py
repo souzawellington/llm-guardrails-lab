@@ -54,7 +54,11 @@ def apply_settings(config: Any, settings: Settings) -> Any:
         parameters = dict(model.parameters or {})
         parameters["base_url"] = settings.llm_base_url
         parameters["temperature"] = 0.2
+        parameters["timeout"] = settings.llm_timeout_seconds
         parameters.pop("api_key", None)
+        parameters.pop("max_tokens", None)
+        parameters.pop("reasoning_effort", None)
+        parameters.update(settings.completion_fields())
         model.parameters = parameters
 
     if settings.enable_jailbreak_heuristics:

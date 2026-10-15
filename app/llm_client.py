@@ -12,6 +12,10 @@ class LLMError(Exception):
     """The model endpoint failed or returned a shape we cannot use."""
 
 
+class LLMTimeout(LLMError):
+    """The model did not answer before LLM_TIMEOUT_SECONDS."""
+
+
 def redact(text: str, secret: str) -> str:
     if secret and secret in text:
         return text.replace(secret, "[redacted]")
@@ -50,15 +54,18 @@ async def complete_chat(
                     "Authorization": f"Bearer {settings.llm_api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": settings.llm_model,
-                    "temperature": 0.2,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_POLICY},
-                        {"role": "user", "content": message},
-                    ],
-                },
-            )
+            json={
+                "model": settings.llm_model,
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": SYSTEM_POLICY},
+                    {"role": "user", "content": message},
+                ],
+                **settings.completion_fields(),
+            },
+        )
+        except httpx.TimeoutException as exc:
+            raise LLMTimeout(redact(str(exc), settings.llm_api_key)) from exc
         except httpx.HTTPError as exc:
             raise LLMError(redact(str(exc), settings.llm_api_key)) from exc
 

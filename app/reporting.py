@@ -117,17 +117,58 @@ def load_report(path: Path) -> ReportLoad:
     return ReportLoad(path=path, rows=rows, warnings=tuple(warnings))
 
 
-def find_latest_report(directory: Path) -> Path | None:
+def find_reports(directory: Path) -> list[Path]:
+    """Every real Garak report in a folder, oldest first. Sample files are ignored."""
     if not directory.is_dir():
-        return None
+        return []
     candidates = [
         path
         for path in directory.glob("*.report.jsonl")
         if path.is_file() and "sample" not in path.name.lower()
     ]
-    if not candidates:
+    return sorted(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def find_latest_report(directory: Path) -> Path | None:
+    reports = find_reports(directory)
+    if not reports:
         return None
-    return max(candidates, key=lambda path: path.stat().st_mtime)
+    return reports[-1]
+
+
+def load_reports(paths: list[Path]) -> ReportLoad:
+    """Pool eval rows from every report. One-probe resumes stay in separate files."""
+    if len(paths) == 1:
+        return load_report(paths[0])
+    combined: dict[tuple[str, str], dict[str, int | None]] = {}
+    warnings: list[str] = []
+    for path in paths:
+        loaded = load_report(path)
+        warnings.extend(loaded.warnings)
+        for row in loaded.rows:
+            key = (row.probe, row.detector)
+            bucket = combined.setdefault(
+                key,
+                {"passed": 0, "total_evaluated": 0, "fails": 0, "nones": 0},
+            )
+            bucket["passed"] = int(bucket["passed"] or 0) + row.passed
+            bucket["total_evaluated"] = int(bucket["total_evaluated"] or 0) + row.total_evaluated
+            if row.fails is not None:
+                bucket["fails"] = int(bucket["fails"] or 0) + row.fails
+            if row.nones is not None:
+                bucket["nones"] = int(bucket["nones"] or 0) + row.nones
+    rows = tuple(
+        EvalRow(
+            probe=probe,
+            detector=detector,
+            passed=int(values["passed"] or 0),
+            total_evaluated=int(values["total_evaluated"] or 0),
+            fails=values["fails"],
+            nones=values["nones"],
+        )
+        for (probe, detector), values in sorted(combined.items())
+    )
+    return ReportLoad(path=paths[-1], rows=rows, warnings=tuple(warnings))
 
 
 @dataclass(frozen=True)

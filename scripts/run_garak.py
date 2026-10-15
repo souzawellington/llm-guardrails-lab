@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.garak_config import PROBE_NOTES, parse_spec, write_configs
+from app.garak_config import PROBE_NOTES, garak_request_timeout, parse_spec, write_configs
 from app.paths import project_root
 from app.settings import load_settings
 
@@ -46,9 +46,13 @@ def main(argv: list[str] | None = None) -> int:
     settings = load_settings()
     root = project_root()
     base_url = (args.base_url or settings.lab_base_url).rstrip("/")
-    probes = parse_spec(os.getenv("GARAK_SPEC"))
+    probes = parse_spec(os.getenv("PROBES") or os.getenv("GARAK_SPEC"))
     generations = _int_env("GARAK_GENERATIONS", 1)
     prompt_cap = _int_env("GARAK_PROMPT_CAP", 8)
+    request_timeout = garak_request_timeout(
+        settings.llm_timeout_seconds,
+        _int_env("GARAK_REQUEST_TIMEOUT", 0) or None,
+    )
     report_dir = root / "results" / args.mode
     config_path, generator_path = write_configs(
         root / "results" / ".generated",
@@ -58,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         report_dir=report_dir,
         generations=generations,
         prompt_cap=prompt_cap,
+        request_timeout=request_timeout,
     )
 
     print(f"Mode: {args.mode}")
@@ -69,6 +74,17 @@ def main(argv: list[str] | None = None) -> int:
     print(
         "This sends Garak's own probes to YOUR lab process and spends credits on the model in .env."
     )
+    print(f"Model timeout: {settings.llm_timeout_seconds:g}s")
+    print(f"Garak request timeout: {request_timeout}s")
+    print(
+        "A call that passes the model timeout returns HTTP 504. "
+        "Garak skips that prompt and continues. Restart the API after changing .env."
+    )
+    if request_timeout <= settings.llm_timeout_seconds:
+        print(
+            "Warning: Garak is not waiting longer than the model. "
+            "A slow call can abort the scan."
+        )
     print(f"Reports: {report_dir}")
     command = [
         sys.executable,

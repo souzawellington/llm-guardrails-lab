@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from app.reporting import compare, comparison_payload, find_latest_report, load_report
+from app.reporting import compare, comparison_payload, find_latest_report, load_report, load_reports
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -24,6 +24,19 @@ def test_compare_shows_the_change_in_pass_rate() -> None:
     payload = comparison_payload(before, after)
     assert payload["kind"] == "garak-comparison"
     assert "does not ship real scan results" in str(payload["disclaimer"])
+
+
+def test_load_reports_pools_separate_probe_files(tmp_path: Path) -> None:
+    first = tmp_path / "before.dan-11-0.report.jsonl"
+    second = tmp_path / "before.literaturecloze.report.jsonl"
+    before_text = (FIXTURES / "before.report.jsonl").read_text(encoding="utf-8")
+    after_text = (FIXTURES / "after.report.jsonl").read_text(encoding="utf-8")
+    first.write_text(before_text, encoding="utf-8")
+    second.write_text(after_text, encoding="utf-8")
+    pooled = load_reports([first, second])
+    injection = next(row for row in pooled.rows if row.probe == "promptinject.HijackLongPrompt")
+    assert injection.passed == 5
+    assert injection.total_evaluated == 8
 
 
 def test_find_latest_report_ignores_sample_files(tmp_path: Path) -> None:

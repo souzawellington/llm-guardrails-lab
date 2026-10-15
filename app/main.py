@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
 from app import __version__
-from app.llm_client import LLMError, complete_chat
+from app.llm_client import LLMError, LLMTimeout, complete_chat
 from app.rails_runtime import GuardrailsUnavailable, build_rails, guarded_reply
 from app.settings import Settings, load_settings
 
@@ -100,6 +100,8 @@ async def chat_raw(body: ChatRequest) -> ChatResponse:
     settings = _settings_or_400()
     try:
         reply = await complete_chat(settings, body.message)
+    except LLMTimeout as exc:
+        raise HTTPException(status_code=504, detail=str(exc)) from exc
     except LLMError as exc:
         status = 503 if "LLM_API_KEY" in str(exc) or "OPENAI_API_KEY" in str(exc) else 502
         raise HTTPException(status_code=status, detail=str(exc)) from exc

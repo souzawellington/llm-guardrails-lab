@@ -1,6 +1,12 @@
 import json
 
-from app.garak_config import DEFAULT_PROBES, parse_spec, write_configs
+from app.garak_config import (
+    DEFAULT_PROBES,
+    garak_request_timeout,
+    parse_spec,
+    report_prefix_for,
+    write_configs,
+)
 
 
 def test_default_spec_covers_the_four_lab_categories() -> None:
@@ -30,6 +36,9 @@ def test_written_configs_have_no_secrets_and_point_at_the_right_route(tmp_path) 
     rest = generator["rest"]["RestGenerator"]
     assert rest["uri"] == "http://127.0.0.1:8000/v1/chat/raw"
     assert rest["response_json_field"] == "reply"
+    assert rest["request_timeout"] == 330
+    assert rest["skip_codes"] == [502, 504]
+    assert config["reporting"]["report_prefix"] == "before.hijacklongprompt"
     assert "api_key" not in json.dumps(generator).lower()
     assert config["plugins"]["target_type"] == "rest"
     assert config["reporting"]["report_dir"] == str(report_dir)
@@ -44,3 +53,10 @@ def test_written_configs_have_no_secrets_and_point_at_the_right_route(tmp_path) 
     )
     after = json.loads(after_generator.read_text(encoding="utf-8"))
     assert after["rest"]["RestGenerator"]["uri"].endswith("/v1/chat/guarded")
+
+
+def test_timeout_buffer_and_single_probe_prefix() -> None:
+    assert garak_request_timeout(300) == 330
+    assert garak_request_timeout(300, 400) == 400
+    assert report_prefix_for("before", ["probes.dan.Dan_11_0"]) == "before.dan-11-0"
+    assert report_prefix_for("before", list(DEFAULT_PROBES)) == "before"
