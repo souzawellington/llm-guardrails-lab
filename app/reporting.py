@@ -225,7 +225,7 @@ def comparison_payload(before: ReportLoad, after: ReportLoad) -> dict[str, objec
         "kind": "garak-comparison",
         "disclaimer": (
             "Computed only from the eval rows in the two report files. "
-            "This repository does not ship real scan results."
+            "This file stays on the machine that ran the scan."
         ),
         "meaning": (
             "Pass rate is passed / total_evaluated. "
