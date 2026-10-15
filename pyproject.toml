@@ -1,0 +1,51 @@
+[project]
+name = "llm-guardrails-lab"
+version = "0.1.0"
+description = "Defensive lab: scan a chatbot with Garak, protect it with NeMo Guardrails, and compare the reports."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Wellington Vieira De Souza" }]
+keywords = ["llm", "guardrails", "garak", "nemo", "security"]
+dependencies = [
+    "fastapi==0.143.1",
+    "httpx==0.28.1",
+    "pydantic==2.14.1",
+    "python-dotenv==1.2.4",
+    "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "ruff==0.17.0"]
+# Versions checked against PyPI on 2026-10-15.
+# nemoguardrails 0.24.1 supports Python 3.10–3.13. garak 0.17.0 requires Python >= 3.11.
+lab = ["garak==0.17.0", "nemoguardrails==0.24.1"]
+presidio = ["nemoguardrails[sdd]==0.24.1"]
+
+[project.urls]
+Homepage = "https://github.com/souzawellington/llm-guardrails-lab"
+Repository = "https://github.com/souzawellington/llm-guardrails-lab"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]
+"guardrails/actions.py" = ["E402"]

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Guardrails Lab — Wellington Vieira De Souza</title>
+  <meta name="description" content="A defensive lab that scans a chatbot with NVIDIA Garak, adds NVIDIA NeMo Guardrails, and compares the before and after reports.">
+  <meta property="og:title" content="LLM Guardrails Lab">
+  <meta property="og:description" content="Test a chatbot, add live protection, then test it again. An educational security lab by Wellington Vieira De Souza.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10141a;
+      --bg-2: #171d26;
+      --card: #1c242f;
+      --line: #314052;
+      --text: #e8eef6;
+      --muted: #b4c0ce;
+      --accent: #8ee0d4;
+      --accent-2: #d7b07a;
+      --danger: #e39b86;
+      --ok: #9ddeaf;
+      --sample: #3a2f1c;
+      --sample-text: #ffe7b8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(900px 420px at 10% -10%, rgba(142, 224, 212, 0.14), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    body[data-lang="en"] [data-lang="pt"],
+    body[data-lang="pt"] [data-lang="en"] { display: none; }
+    a { color: var(--accent); }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .wrap { width: min(1080px, calc(100% - 2rem)); margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      padding: 1.1rem 0;
+    }
+    .brand { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.82rem; color: var(--muted); }
+    nav { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    nav a { color: var(--text); text-decoration: none; }
+    .lang { display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+    .lang button {
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      padding: 0.35rem 0.7rem;
+      font: inherit;
+      cursor: pointer;
+    }
+    .lang button[aria-pressed="true"] { background: var(--accent); color: #10211f; font-weight: 600; }
+    .hero { padding: 2.5rem 0 1.5rem; }
+    .eyebrow { color: var(--accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.78rem; }
+    h1 {
+      font-family: "IBM Plex Serif", Georgia, serif;
+      font-size: clamp(2.4rem, 6vw, 4.4rem);
+      line-height: 1.05;
+      margin: 0.4rem 0 1rem;
+      max-width: 16ch;
+    }
+    .lede { font-size: 1.15rem; max-width: 62ch; color: var(--muted); }
+    .actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.4rem; }
+    .button, button.button {
+      display: inline-block;
+      text-decoration: none;
+      background: var(--accent);
+      color: #10211f;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 0.7rem 1.1rem;
+      border: 0;
+    }
+    .button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    section { padding: 1.4rem 0 2rem; }
+    h2 { font-family: "IBM Plex Serif", Georgia, serif; font-size: clamp(1.7rem, 3vw, 2.3rem); margin: 0 0 0.8rem; }
+    h3 { margin: 0 0 0.4rem; }
+    .cycle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+    .step {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.1rem;
+      min-height: 100%;
+    }
+    .num { color: var(--accent-2); font-weight: 600; font-size: 0.85rem; }
+    .arrow { display: none; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; padding: 1.1rem; }
+    .sample {
+      background: var(--sample);
+      color: var(--sample-text);
+      border: 1px dashed #c9a15b;
+      border-radius: 16px;
+      padding: 1rem 1.1rem 1.2rem;
+    }
+    .stamp {
+      display: inline-block;
+      border: 2px solid var(--sample-text);
+      padding: 0.1rem 0.45rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.6rem;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.8rem; }
+    th, td { text-align: left; padding: 0.55rem 0.4rem; border-bottom: 1px solid rgba(255, 231, 184, 0.25); }
+    .bars { display: grid; gap: 0.7rem; margin-top: 1rem; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 0.92rem; }
+    .track { height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 999px; overflow: hidden; }
+    .fill { height: 100%; background: var(--danger); }
+    .fill.after { background: var(--ok); width: 80%; }
+    .fill.before { width: 40%; }
+    ul, ol { padding-left: 1.2rem; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    pre {
+      background: #0c1015;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      font-size: 0.92rem;
+    }
+    .stack { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; list-style: none; }
+    .stack li { border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.7rem; background: var(--card); }
+    footer { border-top: 1px solid var(--line); padding: 1.4rem 0 2.4rem; color: var(--muted); }
+    @media (max-width: 800px) {
+      .cycle, .split { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body data-lang="en">
+  <div class="wrap">
+    <header>
+      <div class="brand">LLM Guardrails Lab</div>
+      <nav>
+        <a href="#cycle">Cycle</a>
+        <a href="#results">Results</a>
+        <a href="#run">Run</a>
+        <a href="#author">Author</a>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-set-lang="pt" aria-pressed="false">PT</button>
+        </div>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <p class="eyebrow" data-lang="en">Defensive AI security · educational lab</p>
+      <p class="eyebrow" data-lang="pt">Segurança de IA defensiva · laboratório educativo</p>
+      <h1 data-lang="en">Scan it. Guard it. Scan it again.</h1>
+      <h1 data-lang="pt">Teste. Proteja. Teste de novo.</h1>
+      <p class="lede" data-lang="en">
+        A public lab that shows the test–protect–retest cycle for a chatbot.
+        NVIDIA Garak looks for weaknesses. NVIDIA NeMo Guardrails checks messages while the bot is in use.
+        You run the scan a second time and compare the reports.
+      </p>
+      <p class="lede" data-lang="pt">
+        Um laboratório público que mostra o ciclo testar–proteger–testar de novo.
+        O NVIDIA Garak procura fraquezas. O NVIDIA NeMo Guardrails confere as mensagens enquanto o bot está em uso.
+        Você roda o teste outra vez e compara os relatórios.
+      </p>
+      <div class="actions">
+        <a class="button" href="https://github.com/souzawellington/llm-guardrails-lab">GitHub</a>
+        <a class="button ghost" href="#run" data-lang="en">How to run</a>
+        <a class="button ghost" href="#run" data-lang="pt">Como executar</a>
+      </div>
+    </section>
+
+    <section id="cycle">
+      <h2 data-lang="en">The cycle</h2>
+      <h2 data-lang="pt">O ciclo</h2>
+      <div class="cycle">
+        <article class="step">
+          <div class="num">01 · Scan</div>
+          <h3>Garak</h3>
+          <p data-lang="en">A scanner you run before launch. It sends many test prompts to your own bot and records which answers look unsafe.</p>
+          <p data-lang="pt">Um scanner que você roda antes de publicar. Ele envia vários testes para o seu próprio bot e registra as respostas que parecem inseguras.</p>
+        </article>
+        <article class="step">
+          <div class="num">02 · Protect</div>
+          <h3>NeMo Guardrails</h3>
+          <p data-lang="en">Live protection. Each message is checked on the way in and on the way out: policy, jailbreak hints, topic, and personal data.</p>
+          <p data-lang="pt">Proteção ao vivo. Cada mensagem é conferida na entrada e na saída: política, sinais de jailbreak, assunto e dados pessoais.</p>
+        </article>
+        <article class="step">
+          <div class="num">03 · Retest</div>
+          <h3 data-lang="en">Compare</h3>
+          <h3 data-lang="pt">Comparar</h3>
+          <p data-lang="en">The same scanner runs against the guarded bot. The difference between the two reports is the measurement.</p>
+          <p data-lang="pt">O mesmo scanner roda contra o bot protegido. A diferença entre os dois relatórios é a medida.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-lang="en">Two tools, two jobs</h2>
+      <h2 data-lang="pt">Duas ferramentas, dois papéis</h2>
+      <div class="split">
+        <article class="card">
+          <h3>Garak</h3>
+          <p data-lang="en">The inspector. It does not sit in front of users. You run it when you want a report: prompt injection, jailbreak, data leakage, toxicity.</p>
+          <p data-lang="pt">O inspetor. Ele não fica na frente dos usuários. Você roda quando quer um relatório: injeção de prompt, jailbreak, vazamento de dados, toxicidade.</p>
+        </article>
+        <article class="card">
+          <h3>NeMo Guardrails</h3>
+          <p data-lang="en">The door policy. It stays on in production and can block or mask a message before anyone sees a bad answer.</p>
+          <p data-lang="pt">A política da porta. Fica ligada em produção e pode bloquear ou mascarar uma mensagem antes que alguém veja uma resposta ruim.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="results">
+      <h2 data-lang="en">Before and after</h2>
+      <h2 data-lang="pt">Antes e depois</h2>
+      <div class="sample">
+        <div class="stamp">SAMPLE</div>
+        <p data-lang="en"><strong>Not a real scan.</strong> These bars are a picture of the layout. This repository does not ship Garak results. After you run the lab, your own <code>results/comparison.json</code> replaces this illustration.</p>
+        <p data-lang="pt"><strong>Não é um teste real.</strong> Estas barras são um desenho do layout. Este repositório não traz resultados do Garak. Depois que você rodar o laboratório, o seu <code>results/comparison.json</code> substitui esta ilustração.</p>
+        <div class="bars" aria-hidden="true">
+          <div>
+            <div class="bar-label"><span>Before rails · illustration</span><span>2 of 5</span></div>
+            <div class="track"><div class="fill before"></div></div>
+          </div>
+          <div>
+            <div class="bar-label"><span>After rails · illustration</span><span>4 of 5</span></div>
+            <div class="track"><div class="fill after"></div></div>
+          </div>
+        </div>
+        <table>
+          <caption class="sr" data-lang="en">Sample table, not a real scan</caption>
+          <thead>
+            <tr>
+              <th data-lang="en">Check</th>
+              <th data-lang="pt">Verificação</th>
+              <th data-lang="en">Before</th>
+              <th data-lang="pt">Antes</th>
+              <th data-lang="en">After</th>
+              <th data-lang="pt">Depois</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Prompt injection</td><td>2 of 5</td><td>4 of 5</td></tr>
+            <tr><td>Jailbreak</td><td>1 of 5</td><td>4 of 5</td></tr>
+            <tr><td>Data leakage</td><td>3 of 5</td><td>4 of 5</td></tr>
+            <tr><td>Toxicity</td><td>2 of 5</td><td>5 of 5</td></tr>
+          </tbody>
+        </table>
+        <p data-lang="en">Every cell above is an illustration. In a real Garak report, a higher pass rate means more answers did not trigger the detector.</p>
+        <p data-lang="pt">Cada célula acima é uma ilustração. Num relatório real do Garak, uma taxa maior significa que mais respostas não dispararam o detector.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2 data-lang="en">Stack</h2>
+      <h2 data-lang="pt">Pilha</h2>
+      <ul class="stack">
+        <li>Python 3.11–3.13</li>
+        <li>FastAPI 0.143</li>
+        <li>NeMo Guardrails 0.24.1</li>
+        <li>Garak 0.17.0</li>
+        <li>OpenAI-compatible API or Ollama</li>
+        <li>GitHub Actions · GitHub Pages</li>
+      </ul>
+      <p data-lang="en">No NVIDIA GPU is required when the model is an API. A local model needs more RAM. On Windows, if pip stops while compiling a native extension, install the Microsoft C++ Build Tools and retry.</p>
+      <p data-lang="pt">Não precisa de GPU da NVIDIA quando o modelo é uma API. Um modelo local pede mais memória. No Windows, se o pip parar ao compilar uma extensão nativa, instale o Microsoft C++ Build Tools e tente de novo.</p>
+    </section>
+
+    <section id="run">
+      <h2 data-lang="en">How to run</h2>
+      <h2 data-lang="pt">Como executar</h2>
+      <ol>
+        <li data-lang="en">Clone the repo and create a virtual environment with Python 3.11, 3.12, or 3.13.</li>
+        <li data-lang="pt">Clone o repositório e crie um ambiente virtual com Python 3.11, 3.12 ou 3.13.</li>
+        <li data-lang="en">Copy <code>.env.example</code> to <code>.env</code> and set your model URL and key. Do not commit <code>.env</code>.</li>
+        <li data-lang="pt">Copie <code>.env.example</code> para <code>.env</code> e defina a URL e a chave do modelo. Não faça commit do <code>.env</code>.</li>
+        <li data-lang="en">Install the lab packages, start the API, then scan before and after.</li>
+        <li data-lang="pt">Instale os pacotes do laboratório, suba a API e rode o scan antes e depois.</li>
+      </ol>
+      <pre><code>python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-lab.txt
+cp .env.example .env
+make serve
+# second terminal, from the repo root
+make scan-before
+make scan-after
+make compare</code></pre>
+      <p data-lang="en">The local chat is at <code>http://127.0.0.1:8000/ui</code>. Leave the server on localhost. It has no login, and anyone who can reach it can spend your API key.</p>
+      <p data-lang="pt">O chat local fica em <code>http://127.0.0.1:8000/ui</code>. Deixe o servidor em localhost. Ele não tem login, e quem conseguir acessá-lo pode gastar a sua chave de API.</p>
+    </section>
+
+    <section id="author">
+      <h2 data-lang="en">Author</h2>
+      <h2 data-lang="pt">Autor</h2>
+      <article class="card">
+        <h3>Wellington Vieira De Souza</h3>
+        <p data-lang="en">Brazilian founder and software architect. He works on AI products and scalable systems.</p>
+        <p data-lang="pt">Fundador e arquiteto de software brasileiro. Trabalha com produtos de IA e sistemas escaláveis.</p>
+        <p><a href="https://github.com/souzawellington">github.com/souzawellington</a></p>
+      </article>
+    </section>
+
+    <footer>
+      <p data-lang="en">Garak and NeMo Guardrails are NVIDIA projects. This lab is an independent educational demo, not an NVIDIA product. Use the scanner only on systems you are allowed to test.</p>
+      <p data-lang="pt">Garak e NeMo Guardrails são projetos da NVIDIA. Este laboratório é uma demonstração educativa independente, não um produto da NVIDIA. Use o scanner só em sistemas que você tem permissão para testar.</p>
+      <p>MIT License · <a href="https://github.com/souzawellington/llm-guardrails-lab/blob/main/README.md">README</a> · <a href="https://github.com/souzawellington/llm-guardrails-lab/blob/main/README.pt-BR.md">README.pt-BR</a></p>
+    </footer>
+  </div>
+  <script>
+    const buttons = document.querySelectorAll("[data-set-lang]");
+    function setLang(lang) {
+      document.body.dataset.lang = lang;
+      document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.setLang === lang));
+      });
+      try { localStorage.setItem("lab-lang", lang); } catch (error) { /* private mode */ }
+    }
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLang(button.dataset.setLang));
+    });
+    const queryLang = new URLSearchParams(location.search).get("lang");
+    if (queryLang === "pt" || queryLang === "en") {
+      setLang(queryLang);
+    } else {
+      try {
+        const saved = localStorage.getItem("lab-lang");
+        if (saved === "pt" || saved === "en") setLang(saved);
+      } catch (error) { /* ignore */ }
+    }
+  </script>
+</body>
+</html>

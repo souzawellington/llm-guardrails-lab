@@ -1,0 +1,16 @@
+# Scanner and live protection. Install after requirements.txt.
+# Versions verified on PyPI, 2026-10-15:
+#   nemoguardrails 0.24.1  (Python >= 3.10 and < 3.14)
+#   garak 0.17.0           (Python >= 3.11)
+#
+# They can share one virtual environment. If pip reports a conflict, use a
+# second environment for garak. The scanner only needs HTTP access to the API.
+-r requirements.txt
+nemoguardrails==0.24.1
+garak==0.17.0
+
+# Optional, not installed by the lines above:
+#   pip install "nemoguardrails[sdd]==0.24.1"
+#   python -m spacy download en_core_web_lg
+#   pip install torch transformers
+# Then set ENABLE_PRESIDIO=1 or ENABLE_JAILBREAK_HEURISTICS=1. See the README.

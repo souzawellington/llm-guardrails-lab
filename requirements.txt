@@ -1,0 +1,7 @@
+# App runtime. These packages are enough for the API, the chat page, and the tests.
+# Verified on PyPI, 2026-10-15.
+fastapi==0.143.1
+httpx==0.28.1
+pydantic==2.14.1
+python-dotenv==1.2.4
+uvicorn==0.54.0

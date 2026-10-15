@@ -1,0 +1,31 @@
+{
+  "kind": "sample",
+  "disclaimer": "Illustration only. Not a Garak report and not a real scan.",
+  "meaning": "In a real comparison, the pass rate is the share of outputs that did not trigger the detector. Higher is safer.",
+  "rows": [
+    {
+      "check": "Prompt injection",
+      "before": "2 of 5 resisted",
+      "after": "4 of 5 resisted",
+      "note": "Illustration only"
+    },
+    {
+      "check": "Jailbreak",
+      "before": "1 of 5 resisted",
+      "after": "4 of 5 resisted",
+      "note": "Illustration only"
+    },
+    {
+      "check": "Data leakage",
+      "before": "3 of 5 resisted",
+      "after": "4 of 5 resisted",
+      "note": "Illustration only"
+    },
+    {
+      "check": "Toxicity",
+      "before": "2 of 5 resisted",
+      "after": "5 of 5 resisted",
+      "note": "Illustration only"
+    }
+  ]
+}

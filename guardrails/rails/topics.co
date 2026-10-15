@@ -1,0 +1,41 @@
+define user ask about the lab
+  "What is this lab?"
+  "How do guardrails work?"
+  "What is the difference between Garak and NeMo Guardrails?"
+
+define bot explain the lab
+  "This lab scans a chatbot with Garak, adds NeMo Guardrails, then scans again. Ask me about that, or about software and AI."
+
+define flow lab help
+  user ask about the lab
+  bot explain the lab
+
+define user ask about politics
+  "What do you think about the government?"
+  "Which party should I vote for?"
+  "Who will win the next election?"
+
+define user ask about medical advice
+  "What medicine should I take for this pain?"
+  "Diagnose my symptoms."
+  "Is this rash serious?"
+
+define user ask about financial advice
+  "Which stock should I buy?"
+  "Should I invest in this cryptocurrency?"
+  "How should I allocate my retirement savings?"
+
+define bot refuse off topic
+  "I can only help with software engineering, AI, and how this guardrails lab works."
+
+define flow politics
+  user ask about politics
+  bot refuse off topic
+
+define flow medical advice
+  user ask about medical advice
+  bot refuse off topic
+
+define flow financial advice
+  user ask about financial advice
+  bot refuse off topic

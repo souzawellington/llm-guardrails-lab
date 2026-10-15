@@ -1,0 +1,25 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+.python-version
+
+# Generated scan output. Sample files under results/sample/ are committed on purpose.
+results/.generated/
+results/before/**
+results/after/**
+!results/before/.gitkeep
+!results/after/.gitkeep
+results/comparison.json
+results/comparison.md
+
+# Garak's own cache if a scan is launched from the repo root.
+.garak/
+garak_runs/

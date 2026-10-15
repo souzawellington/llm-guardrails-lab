@@ -1,0 +1,14 @@
+define bot refuse to respond
+  "I'm sorry, I can't respond to that."
+
+define flow mask pii on input
+  $user_message = execute mask_pii_regex(source="input", text=$user_message)
+
+define flow mask pii on output
+  $bot_message = execute mask_pii_regex(source="output", text=$bot_message)
+
+define flow jailbreak pattern check
+  $is_jailbreak = execute check_jailbreak_patterns(text=$user_message)
+  if $is_jailbreak
+    bot refuse to respond
+    stop
