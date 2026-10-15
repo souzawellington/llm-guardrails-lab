@@ -23,7 +23,7 @@ def test_compare_shows_the_change_in_pass_rate() -> None:
     assert change == 0.75
     payload = comparison_payload(before, after)
     assert payload["kind"] == "garak-comparison"
-    assert "does not ship real scan results" in str(payload["disclaimer"])
+    assert "stays on the machine that ran the scan" in str(payload["disclaimer"])
 
 
 def test_load_reports_pools_separate_probe_files(tmp_path: Path) -> None:
