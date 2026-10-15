@@ -58,12 +58,14 @@ The model can be any OpenAI-compatible chat API, including a local [Ollama](http
 
 ## Quickstart
 
-Use Python 3.11, 3.12, or 3.13. Garak 0.17 requires 3.11 or newer. NeMo Guardrails 0.24.1 supports 3.10 through 3.13.
+Supported Python is 3.10 through 3.13. Python 3.14 does not work: `nemoguardrails==0.24.1` requires `>=3.10,<3.14`. Use 3.12. Garak 0.17 needs 3.11 or newer, so 3.12 covers the whole lab.
+
+On Ubuntu the command is `python3`, not `python`. Install with [uv](https://docs.astral.sh/uv/) so the environment is not the system interpreter:
 
 ```bash
-python -m venv .venv
+uv venv --python 3.12 .venv
 source .venv/bin/activate
-python -m pip install -r requirements-lab.txt
+uv pip install -r requirements-lab.txt
 cp .env.example .env
 ```
 

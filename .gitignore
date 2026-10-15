@@ -9,7 +9,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-.python-version
 
 # Generated scan output. Sample files under results/sample/ are committed on purpose.
 results/.generated/
